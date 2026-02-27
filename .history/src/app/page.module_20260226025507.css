@@ -1,0 +1,35 @@
+.main {
+  max-width: 900px;
+  height: 70vh;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: Arial, sans-serif;
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+.upload {
+  margin-bottom: 12px;
+}
+
+.canvasBox {
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  overflow: auto;
+  background: white;
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  cursor: crosshair;
+}
+
+.note {
+  margin-top: 12px;
+  color: #666;
+  font-size: 14px;
+}

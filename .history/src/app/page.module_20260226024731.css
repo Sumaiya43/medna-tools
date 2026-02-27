@@ -1,0 +1,16 @@
+.page {
+  max-width: 1200px;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: Arial, sans-serif;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.main {
+  width: 70%;
+  background: red;
+}

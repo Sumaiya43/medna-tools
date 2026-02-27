@@ -1,0 +1,7 @@
+.page {
+  max-width: 600px;
+  max-height: 50vh;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: Arial, sans-serif;
+}

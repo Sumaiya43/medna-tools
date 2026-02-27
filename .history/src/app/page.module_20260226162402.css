@@ -1,0 +1,92 @@
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: Arial, sans-serif;
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.upload {
+  padding: 8px;
+}
+
+.btn {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 14px;
+  color: #333;
+}
+
+.smallInput {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  min-width: 110px;
+}
+
+/* ✅ Make the picture area shorter */
+.canvasBox {
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  overflow: auto; /* scroll inside */
+  background: white;
+  max-height: 420px; /* <-- adjust: 300 / 400 / 500 */
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.note {
+  margin-top: 12px;
+  color: #666;
+  font-size: 14px;
+}
+
+.infoBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fafafa;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.tip {
+  color: #666;
+}
+
+button {
+  background: blue;
+}

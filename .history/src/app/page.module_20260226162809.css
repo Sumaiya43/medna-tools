@@ -1,0 +1,162 @@
+/* Import medical-style font */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px;
+  font-family: "Inter", sans-serif;
+  background: #f4f8fb;
+  min-height: 100vh;
+}
+
+/* Heading */
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #0b5cab;
+  margin-bottom: 18px;
+
+  /* animation */
+  animation: fadeSlide 0.6s ease;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Controls bar */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Upload */
+.upload {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #c9d8e6;
+  background: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.upload:hover {
+  border-color: #0b5cab;
+}
+
+/* MEDNA style buttons */
+.btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #0b5cab, #0f7bdc);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(11, 92, 171, 0.25);
+}
+
+.btn:active {
+  transform: translateY(0px);
+}
+
+.btn:disabled {
+  background: #9bb7d4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Inputs */
+.label {
+  font-size: 14px;
+  color: #334;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.smallInput {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #c9d8e6;
+  background: white;
+  color: blue;
+}
+
+.smallInput:focus {
+  outline: none;
+  border-color: #0b5cab;
+  box-shadow: 0 0 0 2px rgba(11, 92, 171, 0.15);
+}
+
+/* Canvas container */
+.canvasBox {
+  border-radius: 12px;
+  background: white;
+  max-height: 450px;
+  overflow: auto;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+
+  border: 1px solid #d9e3ee;
+
+  transition: 0.3s;
+}
+
+.canvasBox:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  cursor: crosshair;
+}
+
+/* Info panel */
+.infoBox {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+
+  background: white;
+
+  border: 1px solid #d9e3ee;
+
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+
+  font-size: 14px;
+
+  display: grid;
+  gap: 6px;
+
+  animation: fadeSlide 0.5s ease;
+}
+
+.note {
+  margin-top: 12px;
+  color: #667;
+}
+
+.tip {
+  color: #0b5cab;
+  font-weight: 500;
+}

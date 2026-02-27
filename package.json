@@ -1,0 +1,23 @@
+{
+  "name": "medna-tools",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:local": "next dev --hostname 127.0.0.1 --port 3000",
+    "dev:poll": "CHOKIDAR_USEPOLLING=1 WATCHPACK_POLLING=true next dev",
+    "dev:liveshare": "CHOKIDAR_USEPOLLING=1 WATCHPACK_POLLING=true next dev --hostname 127.0.0.1 --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6"
+  }
+}

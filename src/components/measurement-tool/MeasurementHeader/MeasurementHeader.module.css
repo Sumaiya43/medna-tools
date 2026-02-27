@@ -1,0 +1,45 @@
+.header {
+  max-width: 1150px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.subtitle {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.badge {
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid var(--stroke2);
+  box-shadow: var(--shadow2);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.badge b {
+  color: var(--text);
+}
+
+@media (max-width: 820px) {
+  .badge {
+    display: none;
+  }
+}

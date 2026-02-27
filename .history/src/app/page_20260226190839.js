@@ -1,0 +1,1270 @@
+// "use client";
+
+// import { useEffect, useRef, useState } from "react";
+// import styles from "./page.module.css";
+
+// export default function Home() {
+//   const canvasRef = useRef(null);
+
+//   const [imgObj, setImgObj] = useState(null);
+
+//   // Multi-line tool
+//   const [lines, setLines] = useState([{ A: null, B: null }]);
+//   const [activeIndex, setActiveIndex] = useState(0);
+
+//   // Drag: which line + which point
+//   const [drag, setDrag] = useState({ lineIndex: null, point: null });
+
+//   // Calibration (px per 1 cm)
+//   const [pxPerCm, setPxPerCm] = useState(100);
+
+//   // View transform for "fit image into fixed canvas"
+//   // scale + offsets tell us how image is drawn inside the canvas
+//   const viewRef = useRef({ scale: 1, offX: 0, offY: 0, drawW: 0, drawH: 0 });
+
+//   const dotSize = 9; // handles
+//   const grabPadding = 10; // easy to grab
+
+//   // -------- Helpers --------
+//   function dist(p1, p2) {
+//     const dx = p1.x - p2.x;
+//     const dy = p1.y - p2.y;
+//     return Math.sqrt(dx * dx + dy * dy);
+//   }
+
+//   function hitTest(point, dotCenter) {
+//     if (!dotCenter) return false;
+//     return dist(point, dotCenter) <= dotSize + grabPadding;
+//   }
+
+//   function lineColor(i) {
+//     const colors = ["#3AA0FF", "#22C55E", "#F97316", "#A855F7", "#EF4444"];
+//     return colors[i % colors.length];
+//   }
+
+//   // Convert mouse position (canvas space) -> image space
+//   function canvasToImagePoint(e) {
+//     const canvas = canvasRef.current;
+//     const rect = canvas.getBoundingClientRect();
+
+//     // mouse in CSS pixels
+//     const cx = e.clientX - rect.left;
+//     const cy = e.clientY - rect.top;
+
+//     const { scale, offX, offY } = viewRef.current;
+
+//     // image coords = (canvas coords - offset) / scale
+//     const x = (cx - offX) / scale;
+//     const y = (cy - offY) / scale;
+
+//     return { x, y };
+//   }
+
+//   // Clamp point to image bounds (so user can’t drag outside)
+//   function clampToImage(p) {
+//     if (!imgObj) return p;
+//     return {
+//       x: Math.max(0, Math.min(imgObj.width, p.x)),
+//       y: Math.max(0, Math.min(imgObj.height, p.y)),
+//     };
+//   }
+
+//   // -------- Drawing --------
+//   function drawAll() {
+//     const canvas = canvasRef.current;
+//     if (!canvas || !imgObj) return;
+
+//     const ctx = canvas.getContext("2d");
+//     if (!ctx) return;
+
+//     // Fixed viewport size based on CSS box
+//     const rect = canvas.getBoundingClientRect();
+//     const dpr = window.devicePixelRatio || 1;
+
+//     // Make drawing crisp on retina screens
+//     canvas.width = Math.round(rect.width * dpr);
+//     canvas.height = Math.round(rect.height * dpr);
+//     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw using CSS pixel units
+
+//     // Background (premium)
+//     ctx.clearRect(0, 0, rect.width, rect.height);
+//     ctx.fillStyle = "#0b1220";
+//     ctx.fillRect(0, 0, rect.width, rect.height);
+
+//     // Fit image into canvas (contain)
+//     const scale = Math.min(
+//       rect.width / imgObj.width,
+//       rect.height / imgObj.height,
+//     );
+//     const drawW = imgObj.width * scale;
+//     const drawH = imgObj.height * scale;
+//     const offX = (rect.width - drawW) / 2;
+//     const offY = (rect.height - drawH) / 2;
+
+//     // Save transform for click mapping
+//     viewRef.current = { scale, offX, offY, drawW, drawH };
+
+//     // Draw image (slightly softened)
+//     ctx.save();
+//     ctx.globalAlpha = 0.98;
+//     ctx.drawImage(imgObj, offX, offY, drawW, drawH);
+//     ctx.restore();
+
+//     // Subtle vignette overlay (premium look)
+//     ctx.save();
+//     const g = ctx.createRadialGradient(
+//       rect.width / 2,
+//       rect.height / 2,
+//       Math.min(rect.width, rect.height) * 0.2,
+//       rect.width / 2,
+//       rect.height / 2,
+//       Math.min(rect.width, rect.height) * 0.75,
+//     );
+//     g.addColorStop(0, "rgba(0,0,0,0)");
+//     g.addColorStop(1, "rgba(0,0,0,0.35)");
+//     ctx.fillStyle = g;
+//     ctx.fillRect(0, 0, rect.width, rect.height);
+//     ctx.restore();
+
+//     // Draw all lines (premium)
+//     lines.forEach((ln, i) => {
+//       const { A, B } = ln;
+//       if (!A || !B) return;
+
+//       // Convert image coords -> canvas coords for drawing
+//       const Ax = offX + A.x * scale;
+//       const Ay = offY + A.y * scale;
+//       const Bx = offX + B.x * scale;
+//       const By = offY + B.y * scale;
+
+//       const base = lineColor(i);
+
+//       // Glow under-line
+//       ctx.save();
+//       ctx.beginPath();
+//       ctx.moveTo(Ax, Ay);
+//       ctx.lineTo(Bx, By);
+//       ctx.lineWidth = 8;
+//       ctx.lineCap = "round";
+//       ctx.strokeStyle = base;
+//       ctx.globalAlpha = 0.18;
+//       ctx.shadowBlur = 18;
+//       ctx.shadowColor = base;
+//       ctx.stroke();
+//       ctx.restore();
+
+//       // Main line with gradient
+//       ctx.save();
+//       const grad = ctx.createLinearGradient(Ax, Ay, Bx, By);
+//       grad.addColorStop(0, "rgba(255,255,255,0.9)");
+//       grad.addColorStop(0.25, base);
+//       grad.addColorStop(1, "rgba(255,255,255,0.65)");
+
+//       ctx.beginPath();
+//       ctx.moveTo(Ax, Ay);
+//       ctx.lineTo(Bx, By);
+//       ctx.lineWidth = 4;
+//       ctx.lineCap = "round";
+//       ctx.strokeStyle = grad;
+//       ctx.shadowBlur = 6;
+//       ctx.shadowColor = "rgba(0,0,0,0.35)";
+//       ctx.stroke();
+//       ctx.restore();
+
+//       // Handles (premium ring)
+//       drawHandle(ctx, Ax, Ay, i === activeIndex);
+//       drawHandle(ctx, Bx, By, i === activeIndex);
+
+//       // Measurement label bubble (premium)
+//       const midX = (Ax + Bx) / 2;
+//       const midY = (Ay + By) / 2;
+
+//       const dx = B.x - A.x;
+//       const dy = B.y - A.y;
+//       const distancePx = Math.sqrt(dx * dx + dy * dy);
+//       const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+//       const cm = pxPerCm > 0 ? distancePx / pxPerCm : null;
+//     });
+
+//     // If active line has only A (first click), draw a small crosshair at A
+//     const active = lines[activeIndex];
+//     if (active?.A && !active?.B) {
+//       const Ax = offX + active.A.x * scale;
+//       const Ay = offY + active.A.y * scale;
+//       drawCrosshair(ctx, Ax, Ay);
+//     }
+//   }
+
+//   function drawHandle(ctx, x, y, isActive) {
+//     ctx.save();
+
+//     // Outer ring
+//     ctx.beginPath();
+//     ctx.arc(x, y, isActive ? 10 : 9, 0, Math.PI * 2);
+//     ctx.fillStyle = "rgba(255,255,255,0.10)";
+//     ctx.fill();
+
+//     ctx.lineWidth = 2;
+//     ctx.strokeStyle = isActive
+//       ? "rgba(255,255,255,0.85)"
+//       : "rgba(255,255,255,0.55)";
+//     ctx.stroke();
+
+//     // Inner dot
+//     ctx.beginPath();
+//     ctx.arc(x, y, isActive ? 4.5 : 4, 0, Math.PI * 2);
+//     ctx.fillStyle = "rgba(255,255,255,0.9)";
+//     ctx.fill();
+
+//     ctx.restore();
+//   }
+
+//   function drawLabel(ctx, x, y, text, accent) {
+//     ctx.save();
+//     ctx.font = "12px Inter, Arial";
+//     ctx.textBaseline = "middle";
+
+//     const padX = 10;
+//     const padY = 8;
+//     const textW = ctx.measureText(text).width;
+//     const boxW = textW + padX * 2;
+//     const boxH = 28;
+
+//     const bx = x - boxW / 2;
+//     const by = y - 34; // above the line
+
+//     // Background bubble
+//     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+//     ctx.strokeStyle = "rgba(255,255,255,0.18)";
+//     ctx.lineWidth = 1;
+
+//     roundRect(ctx, bx, by, boxW, boxH, 10);
+//     ctx.fill();
+//     ctx.stroke();
+
+//     // Accent bar
+//     ctx.fillStyle = accent;
+//     roundRect(ctx, bx + 6, by + 6, 4, boxH - 12, 4);
+//     ctx.fill();
+
+//     // Text
+//     ctx.fillStyle = "rgba(255,255,255,0.92)";
+//     ctx.fillText(text, bx + padX + 6, by + boxH / 2);
+
+//     ctx.restore();
+//   }
+
+//   function drawCrosshair(ctx, x, y) {
+//     ctx.save();
+//     ctx.strokeStyle = "rgba(255,255,255,0.6)";
+//     ctx.lineWidth = 1;
+//     ctx.beginPath();
+//     ctx.moveTo(x - 12, y);
+//     ctx.lineTo(x + 12, y);
+//     ctx.moveTo(x, y - 12);
+//     ctx.lineTo(x, y + 12);
+//     ctx.stroke();
+//     ctx.restore();
+//   }
+
+//   function roundRect(ctx, x, y, w, h, r) {
+//     const rr = Math.min(r, w / 2, h / 2);
+//     ctx.beginPath();
+//     ctx.moveTo(x + rr, y);
+//     ctx.arcTo(x + w, y, x + w, y + h, rr);
+//     ctx.arcTo(x + w, y + h, x, y + h, rr);
+//     ctx.arcTo(x, y + h, x, y, rr);
+//     ctx.arcTo(x, y, x + w, y, rr);
+//     ctx.closePath();
+//   }
+
+//   // Redraw whenever lines / activeIndex / image / pxPerCm changes
+//   useEffect(() => {
+//     drawAll();
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [imgObj, lines, activeIndex, pxPerCm]);
+
+//   // -------- Upload --------
+//   function handleUpload(e) {
+//     const file = e.target.files?.[0];
+//     if (!file) return;
+
+//     const url = URL.createObjectURL(file);
+//     const image = new Image();
+
+//     image.onload = () => {
+//       setImgObj(image);
+//       setLines([{ A: null, B: null }]);
+//       setActiveIndex(0);
+//       setDrag({ lineIndex: null, point: null });
+//     };
+
+//     image.src = url;
+//   }
+
+//   // -------- Line actions --------
+//   function addNewLine() {
+//     setLines((prev) => [...prev, { A: null, B: null }]);
+//     setActiveIndex(lines.length);
+//   }
+
+//   function resetActiveLine() {
+//     setLines((prev) =>
+//       prev.map((ln, i) => (i === activeIndex ? { A: null, B: null } : ln)),
+//     );
+//     setDrag({ lineIndex: null, point: null });
+//   }
+
+//   function resetAllLines() {
+//     setLines([{ A: null, B: null }]);
+//     setActiveIndex(0);
+//     setDrag({ lineIndex: null, point: null });
+//   }
+
+//   // -------- Click to set points (active line) --------
+//   function handleCanvasClick(e) {
+//     if (!imgObj) return;
+//     if (drag.point) return;
+
+//     let p = canvasToImagePoint(e);
+//     p = clampToImage(p);
+
+//     setLines((prev) =>
+//       prev.map((ln, i) => {
+//         if (i !== activeIndex) return ln;
+//         if (!ln.A) return { ...ln, A: p };
+//         if (!ln.B) return { ...ln, B: p };
+//         return ln; // after A and B exist, do nothing on click (drag to adjust)
+//       }),
+//     );
+//   }
+
+//   // -------- Drag handles (any line) --------
+//   function handleMouseDown(e) {
+//     if (!imgObj) return;
+
+//     let p = canvasToImagePoint(e);
+//     p = clampToImage(p);
+
+//     // prioritize active line first
+//     const order = [
+//       activeIndex,
+//       ...lines.map((_, i) => i).filter((i) => i !== activeIndex),
+//     ];
+
+//     for (const i of order) {
+//       const ln = lines[i];
+//       if (hitTest(p, ln.A)) {
+//         setDrag({ lineIndex: i, point: "A" });
+//         setActiveIndex(i);
+//         return;
+//       }
+//       if (hitTest(p, ln.B)) {
+//         setDrag({ lineIndex: i, point: "B" });
+//         setActiveIndex(i);
+//         return;
+//       }
+//     }
+//   }
+
+//   function handleMouseMove(e) {
+//     if (!imgObj) return;
+//     if (!drag.point) return;
+
+//     let p = canvasToImagePoint(e);
+//     p = clampToImage(p);
+
+//     setLines((prev) =>
+//       prev.map((ln, i) => {
+//         if (i !== drag.lineIndex) return ln;
+//         if (drag.point === "A") return { ...ln, A: p };
+//         return { ...ln, B: p };
+//       }),
+//     );
+//   }
+
+//   function handleMouseUp() {
+//     if (!drag.point) return;
+//     setDrag({ lineIndex: null, point: null });
+//   }
+
+//   // -------- UI values for active line --------
+//   const active = lines[activeIndex] || { A: null, B: null };
+
+//   let px = null,
+//     cm = null,
+//     mm = null,
+//     ang = null;
+
+//   if (active.A && active.B) {
+//     const dx = active.B.x - active.A.x;
+//     const dy = active.B.y - active.A.y;
+//     px = Math.sqrt(dx * dx + dy * dy);
+//     ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+//     if (pxPerCm > 0) {
+//       cm = px / pxPerCm;
+//       mm = cm * 10;
+//     }
+//   }
+
+//   return (
+//     <main className={styles.main}>
+//       <div className={styles.header}>
+//         <div>
+//           <h1 className={styles.title}>Medna Medical Tools</h1>
+//           <p className={styles.subtitle}>
+//             Fixed viewport | Premium measurement lines | Multi-line
+//           </p>
+//         </div>
+
+//         <div className={styles.badge}>
+//           Active: <b>Line {activeIndex + 1}</b>
+//         </div>
+//       </div>
+
+//       <div className={styles.controls}>
+//         <input
+//           className={styles.upload}
+//           type="file"
+//           accept="image/*"
+//           onChange={handleUpload}
+//         />
+
+//         <button
+//           className={styles.btnPrimary}
+//           onClick={addNewLine}
+//           disabled={!imgObj}
+//         >
+//           + Add Line
+//         </button>
+
+//         <button
+//           className={styles.btnGhost}
+//           onClick={resetActiveLine}
+//           disabled={!imgObj}
+//         >
+//           Reset Active
+//         </button>
+
+//         <button
+//           className={styles.btnGhost}
+//           onClick={resetAllLines}
+//           disabled={!imgObj}
+//         >
+//           Reset All
+//         </button>
+
+//         <div className={styles.spacer} />
+
+//         {/* <label className={styles.label}>
+//           px / 1 cm
+//           <input
+//             className={styles.smallInput}
+//             type="number"
+//             min="1"
+//             step="1"
+//             value={pxPerCm}
+//             onChange={(e) => setPxPerCm(Number(e.target.value))}
+//             disabled={!imgObj}
+//           />
+//         </label> */}
+
+//         <label className={styles.label}>
+//           Line
+//           <select
+//             className={styles.smallInput}
+//             value={activeIndex}
+//             onChange={(e) => setActiveIndex(Number(e.target.value))}
+//             disabled={!imgObj}
+//           >
+//             {lines.map((_, i) => (
+//               <option key={i} value={i}>
+//                 Line {i + 1}
+//               </option>
+//             ))}
+//           </select>
+//         </label>
+//       </div>
+
+//       <div className={styles.canvasShell}>
+//         <canvas
+//           ref={canvasRef}
+//           className={styles.canvas}
+//           onClick={handleCanvasClick}
+//           onMouseDown={handleMouseDown}
+//           onMouseMove={handleMouseMove}
+//           onMouseUp={handleMouseUp}
+//           onMouseLeave={handleMouseUp}
+//         />
+//         {!imgObj && (
+//           <div className={styles.empty}>
+//             Upload an image to start measuring.
+//           </div>
+//         )}
+//       </div>
+
+//       <div className={styles.panel}>
+//         <div className={styles.panelRow}>
+//           <span className={styles.k}>Point A</span>
+//           <span className={styles.v}>
+//             {active.A
+//               ? `${active.A.x.toFixed(1)}, ${active.A.y.toFixed(1)}`
+//               : "Not set"}
+//           </span>
+//         </div>
+//         <div className={styles.panelRow}>
+//           <span className={styles.k}>Point B</span>
+//           <span className={styles.v}>
+//             {active.B
+//               ? `${active.B.x.toFixed(1)}, ${active.B.y.toFixed(1)}`
+//               : "Not set"}
+//           </span>
+//         </div>
+
+//         <div className={styles.divider} />
+
+//         <div className={styles.panelGrid}>
+//           <div className={styles.card}>
+//             <div className={styles.cardLabel}>Distance</div>
+//             <div className={styles.cardValue}>
+//               {px ? `${px.toFixed(1)} px` : "—"}
+//             </div>
+//             <div className={styles.cardSub}>
+//               {cm !== null
+//                 ? `${cm.toFixed(2)} cm / ${mm.toFixed(1)} mm`
+//                 : "Set px per cm"}
+//             </div>
+//           </div>
+
+//           <div className={styles.card}>
+//             <div className={styles.cardLabel}>Angle</div>
+//             <div className={styles.cardValue}>
+//               {ang !== null ? `${ang.toFixed(1)}°` : "—"}
+//             </div>
+//             <div className={styles.cardSub}>Auto-calculated</div>
+//           </div>
+
+//           <div className={styles.card}>
+//             <div className={styles.cardLabel}>Editing</div>
+//             <div className={styles.cardValue}>Drag handles</div>
+//             <div className={styles.cardSub}>Grab endpoints to adjust</div>
+//           </div>
+//         </div>
+//       </div>
+//     </main>
+//   );
+// }
+
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import styles from "./page.module.css";
+
+/**
+ * TOOL MODES:
+ * line: 2 clicks (A,B)
+ * angle: 3 clicks (A, V, B) -> angle at V
+ * rect: click+drag
+ * circle: click+drag
+ * pen: click+drag (free draw path)
+ */
+const TOOLS = {
+  line: "LINE",
+  angle: "ANGLE",
+  rect: "RECT",
+  circle: "CIRCLE",
+  pen: "PEN",
+};
+
+export default function Home() {
+  const canvasRef = useRef(null);
+  const viewRef = useRef({ scale: 1, offX: 0, offY: 0, drawW: 0, drawH: 0 });
+
+  const [imgObj, setImgObj] = useState(null);
+
+  // tools
+  const [tool, setTool] = useState(TOOLS.line);
+
+  // style settings (founder asked)
+  const [strokeColor, setStrokeColor] = useState("#2BFF5A"); // neon green
+  const [lineWidth, setLineWidth] = useState(4);
+
+  // digit location (founder asked)
+  // middle: label at mid point
+  // end: label near point B
+  // above: label above the line (perpendicular offset)
+  const [labelPos, setLabelPos] = useState("above"); // "middle" | "end" | "above"
+  const [showLabel, setShowLabel] = useState(true);
+
+  // Multi-shapes store (each item is one drawing)
+  // item examples:
+  // {type:"line", A:{x,y}, B:{x,y}}
+  // {type:"angle", A:{x,y}, V:{x,y}, B:{x,y}}
+  // {type:"rect", A:{x,y}, B:{x,y}}
+  // {type:"circle", A:{x,y}, B:{x,y}}
+  // {type:"pen", points:[{x,y},...]}
+  const [items, setItems] = useState([]);
+
+  // current “in-progress” drawing
+  const [draft, setDraft] = useState(null);
+
+  // for dragging
+  const [drag, setDrag] = useState({ active: false });
+
+  // calibration (optional – keep if you want cm/mm in panel)
+  const [pxPerCm, setPxPerCm] = useState(100);
+
+  // -------------------- BASIC MATH HELPERS --------------------
+  function clampToImage(p) {
+    if (!imgObj) return p;
+    return {
+      x: Math.max(0, Math.min(imgObj.width, p.x)),
+      y: Math.max(0, Math.min(imgObj.height, p.y)),
+    };
+  }
+
+  function dist(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function angleDeg(A, V, B) {
+    // angle at V between VA and VB
+    const v1 = { x: A.x - V.x, y: A.y - V.y };
+    const v2 = { x: B.x - V.x, y: B.y - V.y };
+
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const m1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+    const m2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+    if (m1 === 0 || m2 === 0) return 0;
+
+    const cos = Math.max(-1, Math.min(1, dot / (m1 * m2)));
+    return (Math.acos(cos) * 180) / Math.PI;
+  }
+
+  // -------------------- COORDINATE MAPPING --------------------
+  // Mouse (canvas CSS space) -> Image space
+  function canvasToImagePoint(e) {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+
+    const { scale, offX, offY } = viewRef.current;
+
+    return {
+      x: (cx - offX) / scale,
+      y: (cy - offY) / scale,
+    };
+  }
+
+  // Image space -> Canvas space (for drawing)
+  function imageToCanvasPoint(p) {
+    const { scale, offX, offY } = viewRef.current;
+    return { x: offX + p.x * scale, y: offY + p.y * scale };
+  }
+
+  // -------------------- DRAWING --------------------
+  function drawAll() {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgObj) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // background
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    // fit image into fixed viewport
+    const scale = Math.min(
+      rect.width / imgObj.width,
+      rect.height / imgObj.height,
+    );
+    const drawW = imgObj.width * scale;
+    const drawH = imgObj.height * scale;
+    const offX = (rect.width - drawW) / 2;
+    const offY = (rect.height - drawH) / 2;
+    viewRef.current = { scale, offX, offY, drawW, drawH };
+
+    // image
+    ctx.globalAlpha = 0.98;
+    ctx.drawImage(imgObj, offX, offY, drawW, drawH);
+    ctx.globalAlpha = 1;
+
+    // draw all finished items
+    items.forEach((it) => drawItem(ctx, it));
+
+    // draw draft on top
+    if (draft) drawItem(ctx, draft, true);
+  }
+
+  function drawItem(ctx, it, isDraft = false) {
+    const color = it.color || strokeColor;
+    const width = it.width || lineWidth;
+
+    // glow under-stroke (premium look like sample)
+    function glowStroke(drawPathFn) {
+      ctx.save();
+      drawPathFn();
+      ctx.lineWidth = width + 6;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.18;
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = color;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // main stroke
+    function mainStroke(drawPathFn) {
+      ctx.save();
+      drawPathFn();
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = color;
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = "rgba(0,0,0,0.35)";
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // label (measurement digit)
+    function label(text, anchorA, anchorB) {
+      if (!showLabel || !text) return;
+
+      // choose position
+      let p;
+      if (labelPos === "middle") {
+        p = { x: (anchorA.x + anchorB.x) / 2, y: (anchorA.y + anchorB.y) / 2 };
+      } else if (labelPos === "end") {
+        p = { x: anchorB.x, y: anchorB.y };
+      } else {
+        // above = offset perpendicular from middle
+        const mid = {
+          x: (anchorA.x + anchorB.x) / 2,
+          y: (anchorA.y + anchorB.y) / 2,
+        };
+        const dx = anchorB.x - anchorA.x;
+        const dy = anchorB.y - anchorA.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        // perpendicular unit vector
+        const nx = -dy / len;
+        const ny = dx / len;
+        p = { x: mid.x + nx * 18, y: mid.y + ny * 18 };
+      }
+
+      const cp = imageToCanvasPoint(p);
+
+      ctx.save();
+      ctx.font = "12px Inter, Arial";
+      ctx.textBaseline = "middle";
+      const padX = 10;
+      const boxH = 26;
+      const textW = ctx.measureText(text).width;
+      const boxW = textW + padX * 2;
+
+      const bx = cp.x - boxW / 2;
+      const by = cp.y - boxH / 2;
+
+      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 1;
+
+      roundRect(ctx, bx, by, boxW, boxH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.fillText(text, bx + padX, by + boxH / 2);
+      ctx.restore();
+    }
+
+    // ---- draw based on type ----
+    if (it.type === "line" && it.A && it.B) {
+      const A = imageToCanvasPoint(it.A);
+      const B = imageToCanvasPoint(it.B);
+
+      glowStroke(() => {
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+      });
+      mainStroke(() => {
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+      });
+
+      // measurement text = px only (you can switch to cm later)
+      const px = dist(it.A, it.B);
+      label(`${px.toFixed(0)} px`, it.A, it.B);
+    }
+
+    if (it.type === "angle" && it.A && it.V && it.B) {
+      const A = imageToCanvasPoint(it.A);
+      const V = imageToCanvasPoint(it.V);
+      const B = imageToCanvasPoint(it.B);
+
+      // two legs
+      glowStroke(() => {
+        ctx.beginPath();
+        ctx.moveTo(V.x, V.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.moveTo(V.x, V.y);
+        ctx.lineTo(B.x, B.y);
+      });
+      mainStroke(() => {
+        ctx.beginPath();
+        ctx.moveTo(V.x, V.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.moveTo(V.x, V.y);
+        ctx.lineTo(B.x, B.y);
+      });
+
+      const deg = angleDeg(it.A, it.V, it.B);
+      // label near vertex
+      if (showLabel) {
+        const cp = imageToCanvasPoint(it.V);
+        drawSmallLabel(ctx, cp.x + 20, cp.y - 18, `${deg.toFixed(1)}°`, color);
+      }
+    }
+
+    if (it.type === "rect" && it.A && it.B) {
+      const A = imageToCanvasPoint(it.A);
+      const B = imageToCanvasPoint(it.B);
+
+      const x = Math.min(A.x, B.x);
+      const y = Math.min(A.y, B.y);
+      const w = Math.abs(B.x - A.x);
+      const h = Math.abs(B.y - A.y);
+
+      glowStroke(() => {
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+      });
+      mainStroke(() => {
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+      });
+    }
+
+    if (it.type === "circle" && it.A && it.B) {
+      const A = imageToCanvasPoint(it.A);
+      const B = imageToCanvasPoint(it.B);
+
+      const r = Math.sqrt((B.x - A.x) ** 2 + (B.y - A.y) ** 2);
+
+      glowStroke(() => {
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, r, 0, Math.PI * 2);
+      });
+      mainStroke(() => {
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, r, 0, Math.PI * 2);
+      });
+    }
+
+    if (it.type === "pen" && it.points && it.points.length > 1) {
+      const pts = it.points.map(imageToCanvasPoint);
+
+      glowStroke(() => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      });
+
+      mainStroke(() => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      });
+    }
+
+    // optional: draft look slightly transparent
+    if (isDraft) {
+      // nothing heavy; kept simple
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawSmallLabel(ctx, x, y, text, accent) {
+    ctx.save();
+    ctx.font = "12px Inter, Arial";
+    ctx.textBaseline = "middle";
+    const padX = 10;
+    const boxH = 26;
+    const textW = ctx.measureText(text).width;
+    const boxW = textW + padX * 2;
+
+    const bx = x;
+    const by = y;
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+
+    roundRect(ctx, bx, by, boxW, boxH, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    // small accent line
+    ctx.fillStyle = accent;
+    roundRect(ctx, bx + 6, by + 6, 4, boxH - 12, 4);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.fillText(text, bx + padX + 6, by + boxH / 2);
+    ctx.restore();
+  }
+
+  // -------------------- EVENTS --------------------
+  function handleUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      setImgObj(image);
+      setItems([]);
+      setDraft(null);
+      setDrag({ active: false });
+    };
+
+    image.src = url;
+  }
+
+  // click-based tools (line, angle)
+  function handleCanvasClick(e) {
+    if (!imgObj) return;
+    if (drag.active) return;
+
+    let p = clampToImage(canvasToImagePoint(e));
+
+    // LINE: 2 clicks
+    if (tool === TOOLS.line) {
+      if (!draft) {
+        setDraft({
+          type: "line",
+          A: p,
+          B: null,
+          color: strokeColor,
+          width: lineWidth,
+        });
+      } else if (draft.type === "line" && !draft.B) {
+        const done = { ...draft, B: p };
+        setItems((prev) => [...prev, done]);
+        setDraft(null);
+      }
+    }
+
+    // ANGLE: 3 clicks (A, V, B)
+    if (tool === TOOLS.angle) {
+      if (!draft) {
+        setDraft({
+          type: "angle",
+          A: p,
+          V: null,
+          B: null,
+          color: strokeColor,
+          width: lineWidth,
+        });
+      } else if (draft.type === "angle" && !draft.V) {
+        setDraft({ ...draft, V: p });
+      } else if (draft.type === "angle" && !draft.B) {
+        const done = { ...draft, B: p };
+        setItems((prev) => [...prev, done]);
+        setDraft(null);
+      }
+    }
+  }
+
+  // drag-based tools (rect, circle, pen)
+  function handleMouseDown(e) {
+    if (!imgObj) return;
+
+    let p = clampToImage(canvasToImagePoint(e));
+    setDrag({ active: true, start: p });
+
+    if (tool === TOOLS.rect) {
+      setDraft({
+        type: "rect",
+        A: p,
+        B: p,
+        color: strokeColor,
+        width: lineWidth,
+      });
+    }
+
+    if (tool === TOOLS.circle) {
+      setDraft({
+        type: "circle",
+        A: p,
+        B: p,
+        color: strokeColor,
+        width: lineWidth,
+      });
+    }
+
+    if (tool === TOOLS.pen) {
+      setDraft({
+        type: "pen",
+        points: [p],
+        color: strokeColor,
+        width: lineWidth,
+      });
+    }
+  }
+
+  function handleMouseMove(e) {
+    if (!imgObj) return;
+    if (!drag.active) return;
+
+    let p = clampToImage(canvasToImagePoint(e));
+
+    if (!draft) return;
+
+    if (draft.type === "rect" || draft.type === "circle") {
+      setDraft({ ...draft, B: p });
+    }
+
+    if (draft.type === "pen") {
+      setDraft({ ...draft, points: [...draft.points, p] });
+    }
+  }
+
+  function handleMouseUp() {
+    if (!drag.active) return;
+
+    setDrag({ active: false });
+
+    if (
+      draft &&
+      (draft.type === "rect" || draft.type === "circle" || draft.type === "pen")
+    ) {
+      setItems((prev) => [...prev, draft]);
+      setDraft(null);
+    }
+  }
+
+  function resetAll() {
+    setItems([]);
+    setDraft(null);
+  }
+
+  // redraw whenever anything changes
+  useEffect(() => {
+    drawAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    imgObj,
+    items,
+    draft,
+    strokeColor,
+    lineWidth,
+    labelPos,
+    showLabel,
+    pxPerCm,
+  ]);
+
+  // -------------------- UI CALCS (example panel) --------------------
+  // Show last item summary
+  const last = items[items.length - 1];
+
+  let summary = "—";
+  if (last?.type === "line" && last.A && last.B) {
+    const px = dist(last.A, last.B);
+    const cm = pxPerCm > 0 ? px / pxPerCm : null;
+    summary = cm
+      ? `${px.toFixed(0)} px (${cm.toFixed(2)} cm)`
+      : `${px.toFixed(0)} px`;
+  }
+  if (last?.type === "angle" && last.A && last.V && last.B) {
+    summary = `${angleDeg(last.A, last.V, last.B).toFixed(1)}°`;
+  }
+
+  // -------------------- RENDER --------------------
+  return (
+    <main className={styles.main}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Medna Measurement Tool</h1>
+          <p className={styles.subtitle}>
+            Tools • Size • Color • Measurement digit position
+          </p>
+        </div>
+        <div className={styles.badge}>
+          Tool: <b>{tool}</b>
+        </div>
+      </div>
+
+      <div className={styles.controls}>
+        <input
+          className={styles.upload}
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+        />
+
+        {/* Toolbar icons (simple buttons) */}
+        <button
+          className={styles.btnGhost}
+          onClick={() => {
+            setTool(TOOLS.line);
+            setDraft(null);
+          }}
+        >
+          📏 Line
+        </button>
+        <button
+          className={styles.btnGhost}
+          onClick={() => {
+            setTool(TOOLS.angle);
+            setDraft(null);
+          }}
+        >
+          📐 Angle
+        </button>
+        <button
+          className={styles.btnGhost}
+          onClick={() => {
+            setTool(TOOLS.circle);
+            setDraft(null);
+          }}
+        >
+          ⭕ Circle
+        </button>
+        <button
+          className={styles.btnGhost}
+          onClick={() => {
+            setTool(TOOLS.rect);
+            setDraft(null);
+          }}
+        >
+          ⬛ Rect
+        </button>
+        <button
+          className={styles.btnGhost}
+          onClick={() => {
+            setTool(TOOLS.pen);
+            setDraft(null);
+          }}
+        >
+          ✏️ Draw
+        </button>
+
+        <div className={styles.spacer} />
+
+        {/* Founder adjustments */}
+        <label className={styles.label}>
+          Color
+          <input
+            className={styles.smallInput}
+            type="color"
+            value={strokeColor}
+            onChange={(e) => setStrokeColor(e.target.value)}
+            disabled={!imgObj}
+          />
+        </label>
+
+        <label className={styles.label}>
+          Size
+          <input
+            className={styles.smallInput}
+            type="number"
+            min="1"
+            max="20"
+            value={lineWidth}
+            onChange={(e) => setLineWidth(Number(e.target.value))}
+            disabled={!imgObj}
+          />
+        </label>
+
+        <label className={styles.label}>
+          Digit
+          <select
+            className={styles.smallInput}
+            value={labelPos}
+            onChange={(e) => setLabelPos(e.target.value)}
+            disabled={!imgObj}
+          >
+            <option value="above">Above line</option>
+            <option value="middle">Middle</option>
+            <option value="end">Near end</option>
+          </select>
+        </label>
+
+        <label className={styles.label}>
+          Show
+          <input
+            type="checkbox"
+            checked={showLabel}
+            onChange={(e) => setShowLabel(e.target.checked)}
+            disabled={!imgObj}
+          />
+        </label>
+
+        <button
+          className={styles.btnPrimary}
+          onClick={resetAll}
+          disabled={!imgObj}
+        >
+          Reset
+        </button>
+      </div>
+
+      <div className={styles.canvasShell}>
+        <canvas
+          ref={canvasRef}
+          className={styles.canvas}
+          onClick={handleCanvasClick}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        />
+        {!imgObj && (
+          <div className={styles.empty}>Upload an image to start.</div>
+        )}
+      </div>
+
+      <div className={styles.panel}>
+        <div className={styles.panelRow}>
+          <span className={styles.k}>Last measurement</span>
+          <span className={styles.v}>{summary}</span>
+        </div>
+        <div className={styles.panelRow}>
+          <span className={styles.k}>Tip</span>
+          <span className={styles.v}>
+            Line/Angle = click points. Rect/Circle/Draw = click+drag.
+          </span>
+        </div>
+      </div>
+    </main>
+  );
+}

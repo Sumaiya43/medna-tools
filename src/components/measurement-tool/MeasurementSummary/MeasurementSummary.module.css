@@ -1,0 +1,27 @@
+.panel {
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid var(--stroke2);
+  box-shadow: var(--shadow2);
+  backdrop-filter: blur(8px);
+}
+
+.panelRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 2px;
+}
+
+.key {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.value {
+  color: var(--text);
+  font-size: 13px;
+}
