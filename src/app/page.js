@@ -573,14 +573,16 @@ export default function Home() {
         setDraft({
           type: "line",
           A: p,
-          B: null,
+          B: p,
+          step: 1,
           color: strokeColor,
           width: lineWidth,
           measurementCmValue: manualCmByTool.line,
           measurementCmLabel: manualLabelForType("line"),
         });
-      } else if (draft.type === "line" && !draft.B) {
+      } else if (draft.type === "line" && draft.step === 1) {
         const done = { ...draft, B: p };
+        delete done.step;
         const next = [...itemsRef.current, done];
         commitItems(next, next.length - 1);
         setDraft(null);
@@ -594,15 +596,17 @@ export default function Home() {
         setDraft({
           type: "angle",
           A: p,
-          V: null,
-          B: null,
+          V: p,
+          B: p,
+          step: 1,
           color: strokeColor,
           width: lineWidth,
         });
-      } else if (draft.type === "angle" && !draft.V) {
-        setDraft({ ...draft, V: p });
-      } else if (draft.type === "angle" && !draft.B) {
+      } else if (draft.type === "angle" && draft.step === 1) {
+        setDraft({ ...draft, V: p, B: p, step: 2 });
+      } else if (draft.type === "angle" && draft.step === 2) {
         const done = { ...draft, B: p };
+        delete done.step;
         const next = [...itemsRef.current, done];
         commitItems(next, next.length - 1);
         setDraft(null);
@@ -708,6 +712,15 @@ export default function Home() {
     let p = clampToImage(canvasToImagePoint(e));
 
     if (drag.type === "NONE") {
+      if (armed && draft?.type === "line" && draft.step === 1) {
+        setDraft((prev) => ({ ...prev, B: p }));
+      }
+      if (armed && draft?.type === "angle" && draft.step === 1) {
+        setDraft((prev) => ({ ...prev, V: p, B: p }));
+      }
+      if (armed && draft?.type === "angle" && draft.step === 2) {
+        setDraft((prev) => ({ ...prev, B: p }));
+      }
       setHoverHandle(findHoveredHandle(p));
       return;
     }
